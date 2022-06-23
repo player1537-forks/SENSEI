@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    svtkAOSDataArrayTemplate.h
+  Module:    senseiAOSDataArrayTemplate.h
 
   Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.
@@ -13,7 +13,7 @@
 
 =========================================================================*/
 /**
- * @class   svtkAOSDataArrayTemplate
+ * @class   senseiAOSDataArrayTemplate
  * @brief   Array-Of-Structs implementation of
  * svtkGenericDataArray.
  *
@@ -28,23 +28,24 @@
  * svtkGenericDataArray svtkSOADataArrayTemplate
  */
 
-#ifndef svtkAOSDataArrayTemplate_h
-#define svtkAOSDataArrayTemplate_h
+#ifndef senseiAOSDataArrayTemplate_h
+#define senseiAOSDataArrayTemplate_h
 
 #include "svtkBuffer.h"           // For storage buffer.
+#include "hamr_buffer.h"
 #include "svtkCommonCoreModule.h" // For export macro
 #include "svtkGenericDataArray.h"
 
 // The export macro below makes no sense, but is necessary for older compilers
 // when we export instantiations of this class from svtkCommonCore.
 template <class ValueTypeT>
-class SVTKCOMMONCORE_EXPORT svtkAOSDataArrayTemplate
-  : public svtkGenericDataArray<svtkAOSDataArrayTemplate<ValueTypeT>, ValueTypeT>
+class SVTKCOMMONCORE_EXPORT senseiAOSDataArrayTemplate
+  : public svtkGenericDataArray<senseiAOSDataArrayTemplate<ValueTypeT>, ValueTypeT>
 {
-  typedef svtkGenericDataArray<svtkAOSDataArrayTemplate<ValueTypeT>, ValueTypeT> GenericDataArrayType;
+  typedef svtkGenericDataArray<senseiAOSDataArrayTemplate<ValueTypeT>, ValueTypeT> GenericDataArrayType;
 
 public:
-  typedef svtkAOSDataArrayTemplate<ValueTypeT> SelfType;
+  typedef senseiAOSDataArrayTemplate<ValueTypeT> SelfType;
   svtkTemplateTypeMacro(SelfType, GenericDataArrayType);
   typedef typename Superclass::ValueType ValueType;
 
@@ -56,7 +57,7 @@ public:
     SVTK_DATA_ARRAY_USER_DEFINED = svtkAbstractArray::SVTK_DATA_ARRAY_USER_DEFINED
   };
 
-  static svtkAOSDataArrayTemplate* New();
+  static senseiAOSDataArrayTemplate* New();
 
   /**
    * Get the value at @a valueIdx. @a valueIdx assumes AOS ordering.
@@ -240,12 +241,12 @@ public:
   //@{
   /**
    * Perform a fast, safe cast from a svtkAbstractArray to a
-   * svtkAOSDataArrayTemplate.
+   * senseiAOSDataArrayTemplate.
    * This method checks if source->GetArrayType() returns AOSDataArrayTemplate
    * or a more derived type, checks the data types, and performs a static_cast
    * to return source as a svtkDataArray pointer. Otherwise, nullptr is returned.
    */
-  static svtkAOSDataArrayTemplate<ValueType>* FastDownCast(svtkAbstractArray* source)
+  static senseiAOSDataArrayTemplate<ValueType>* FastDownCast(svtkAbstractArray* source)
   {
     if (source)
     {
@@ -254,7 +255,7 @@ public:
         case svtkAbstractArray::AoSDataArrayTemplate:
           if (svtkDataTypesCompare(source->GetDataType(), svtkTypeTraits<ValueType>::SVTK_TYPE_ID))
           {
-            return static_cast<svtkAOSDataArrayTemplate<ValueType>*>(source);
+            return static_cast<senseiAOSDataArrayTemplate<ValueType>*>(source);
           }
           break;
       }
@@ -279,8 +280,8 @@ public:
   }
 
 protected:
-  svtkAOSDataArrayTemplate();
-  ~svtkAOSDataArrayTemplate() override;
+  senseiAOSDataArrayTemplate();
+  ~senseiAOSDataArrayTemplate() override;
 
   /**
    * Allocate space for numTuples. Old data is not preserved. If numTuples == 0,
@@ -297,19 +298,19 @@ protected:
   svtkBuffer<ValueType>* Buffer;
 
 private:
-  svtkAOSDataArrayTemplate(const svtkAOSDataArrayTemplate&) = delete;
-  void operator=(const svtkAOSDataArrayTemplate&) = delete;
+  senseiAOSDataArrayTemplate(const senseiAOSDataArrayTemplate&) = delete;
+  void operator=(const senseiAOSDataArrayTemplate&) = delete;
 
-  friend class svtkGenericDataArray<svtkAOSDataArrayTemplate<ValueTypeT>, ValueTypeT>;
+  friend class svtkGenericDataArray<senseiAOSDataArrayTemplate<ValueTypeT>, ValueTypeT>;
 };
 
 #if !defined(SWIG)
 // Declare svtkArrayDownCast implementations for AoS containers:
-svtkArrayDownCast_TemplateFastCastMacro(svtkAOSDataArrayTemplate);
+svtkArrayDownCast_TemplateFastCastMacro(senseiAOSDataArrayTemplate);
 
 // This macro is used by the subclasses to create dummy
 // declarations for these functions such that the wrapper
-// can see them. The wrappers ignore svtkAOSDataArrayTemplate.
+// can see them. The wrappers ignore senseiAOSDataArrayTemplate.
 #define svtkCreateWrappedArrayInterface(T)                                                          \
   int GetDataType() const override;                                                                \
   void GetTypedTuple(svtkIdType i, T* tuple) SVTK_EXPECTS(0 <= i && i < GetNumberOfTuples());        \
@@ -335,21 +336,21 @@ svtkArrayDownCast_TemplateFastCastMacro(svtkAOSDataArrayTemplate);
 #if !defined(SWIG)
 // This portion must be OUTSIDE the include blockers. This is used to tell
 // libraries other than svtkCommonCore that instantiations of
-// svtkAOSDataArrayTemplate can be found externally. This prevents each library
+// senseiAOSDataArrayTemplate can be found externally. This prevents each library
 // from instantiating these on their own.
 #ifdef SVTK_AOS_DATA_ARRAY_TEMPLATE_INSTANTIATING
 #define SVTK_AOS_DATA_ARRAY_TEMPLATE_INSTANTIATE(T)                                                 \
-  template class SVTKCOMMONCORE_EXPORT svtkAOSDataArrayTemplate<T>
+  template class SVTKCOMMONCORE_EXPORT senseiAOSDataArrayTemplate<T>
 #elif defined(SVTK_USE_EXTERN_TEMPLATE)
 #ifndef SVTK_AOS_DATA_ARRAY_TEMPLATE_EXTERN
 #define SVTK_AOS_DATA_ARRAY_TEMPLATE_EXTERN
 #ifdef _MSC_VER
 #pragma warning(push)
-// The following is needed when the svtkAOSDataArrayTemplate is declared
+// The following is needed when the senseiAOSDataArrayTemplate is declared
 // dllexport and is used from another class in svtkCommonCore
 #pragma warning(disable : 4910) // extern and dllexport incompatible
 #endif
-svtkExternTemplateMacro(extern template class SVTKCOMMONCORE_EXPORT svtkAOSDataArrayTemplate);
+svtkExternTemplateMacro(extern template class SVTKCOMMONCORE_EXPORT senseiAOSDataArrayTemplate);
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -380,10 +381,10 @@ svtkExternTemplateMacro(extern template class SVTKCOMMONCORE_EXPORT svtkAOSDataA
 
 // Use an "extern explicit instantiation" to give the class a DLL
 // interface.  This is a compiler-specific extension.
-svtkInstantiateTemplateMacro(extern template class SVTKCOMMONCORE_EXPORT svtkAOSDataArrayTemplate);
+svtkInstantiateTemplateMacro(extern template class SVTKCOMMONCORE_EXPORT senseiAOSDataArrayTemplate);
 
 #pragma warning(pop)
 
 #endif
 #endif
-// SVTK-HeaderTest-Exclude: svtkAOSDataArrayTemplate.h
+// SVTK-HeaderTest-Exclude: senseiAOSDataArrayTemplate.h
