@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    senseiAOSDataArrayTemplate.txx
+  Module:    AOSDataArray.txx
 
   Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.
@@ -12,37 +12,43 @@
      PURPOSE.  See the above copyright notice for more information.
 
 =========================================================================*/
-#ifndef senseiAOSDataArrayTemplate_txx
-#define senseiAOSDataArrayTemplate_txx
+#ifndef AOSDataArray_txx
+#define AOSDataArray_txx
 
-#include "senseiAOSDataArrayTemplate.h"
+#include "AOSDataArray.h"
 
 #include "svtkArrayIteratorTemplate.h"
 
+namespace sensei
+{
+
+/*
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-senseiAOSDataArrayTemplate<ValueTypeT>* senseiAOSDataArrayTemplate<ValueTypeT>::New()
+AOSDataArray<ValueTypeT>* AOSDataArray<ValueTypeT>::New(allocator alloc)
 {
-  SVTK_STANDARD_NEW_BODY(senseiAOSDataArrayTemplate<ValueType>);
+
+}
+*/
+
+//-----------------------------------------------------------------------------
+template <class ValueTypeT>
+AOSDataArray<ValueTypeT>::AOSDataArray(allocator alloc)
+{
+  this->Buffer = new hamr::buffer<ValueTypeT>(alloc);
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-senseiAOSDataArrayTemplate<ValueTypeT>::senseiAOSDataArrayTemplate()
+AOSDataArray<ValueTypeT>::~AOSDataArray()
 {
-  this->Buffer = svtkBuffer<ValueType>::New();
+  delete this->Buffer;
 }
 
+/*
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-senseiAOSDataArrayTemplate<ValueTypeT>::~senseiAOSDataArrayTemplate()
-{
-  this->Buffer->Delete();
-}
-
-//-----------------------------------------------------------------------------
-template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::SetArray(
+void AOSDataArray<ValueTypeT>::SetArray(
   ValueType* array, svtkIdType size, int save, int deleteMethod)
 {
 
@@ -72,21 +78,21 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::SetArray(
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::SetArray(ValueType* array, svtkIdType size, int save)
+void AOSDataArray<ValueTypeT>::SetArray(ValueType* array, svtkIdType size, int save)
 {
   this->SetArray(array, size, save, SVTK_DATA_ARRAY_FREE);
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::SetVoidArray(void* array, svtkIdType size, int save)
+void AOSDataArray<ValueTypeT>::SetVoidArray(void* array, svtkIdType size, int save)
 {
   this->SetArray(static_cast<ValueType*>(array), size, save);
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::SetVoidArray(
+void AOSDataArray<ValueTypeT>::SetVoidArray(
   void* array, svtkIdType size, int save, int deleteMethod)
 {
   this->SetArray(static_cast<ValueType*>(array), size, save, deleteMethod);
@@ -94,14 +100,14 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::SetVoidArray(
 
 //-----------------------------------------------------------------------------
 template <class ValueType>
-void senseiAOSDataArrayTemplate<ValueType>::SetArrayFreeFunction(void (*callback)(void*))
+void AOSDataArray<ValueType>::SetArrayFreeFunction(void (*callback)(void*))
 {
   this->Buffer->SetFreeFunction(false, callback);
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::SetTuple(svtkIdType tupleIdx, const float* tuple)
+void AOSDataArray<ValueTypeT>::SetTuple(svtkIdType tupleIdx, const float* tuple)
 {
   // While std::copy is the obvious choice here, it kills performance on MSVC
   // debugging builds as their STL calls are poorly optimized. Just use a for
@@ -115,7 +121,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::SetTuple(svtkIdType tupleIdx, const
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::SetTuple(svtkIdType tupleIdx, const double* tuple)
+void AOSDataArray<ValueTypeT>::SetTuple(svtkIdType tupleIdx, const double* tuple)
 {
   // See note in SetTuple about std::copy vs for loops on MSVC.
   ValueTypeT* data = this->Buffer->GetBuffer() + tupleIdx * this->NumberOfComponents;
@@ -127,7 +133,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::SetTuple(svtkIdType tupleIdx, const
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::InsertTuple(svtkIdType tupleIdx, const float* tuple)
+void AOSDataArray<ValueTypeT>::InsertTuple(svtkIdType tupleIdx, const float* tuple)
 {
   if (this->EnsureAccessToTuple(tupleIdx))
   {
@@ -144,7 +150,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::InsertTuple(svtkIdType tupleIdx, co
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::InsertTuple(svtkIdType tupleIdx, const double* tuple)
+void AOSDataArray<ValueTypeT>::InsertTuple(svtkIdType tupleIdx, const double* tuple)
 {
   if (this->EnsureAccessToTuple(tupleIdx))
   {
@@ -161,7 +167,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::InsertTuple(svtkIdType tupleIdx, co
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::InsertComponent(
+void AOSDataArray<ValueTypeT>::InsertComponent(
   svtkIdType tupleIdx, int compIdx, double value)
 {
   const svtkIdType newMaxId = tupleIdx * this->NumberOfComponents + compIdx;
@@ -179,7 +185,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::InsertComponent(
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-svtkIdType senseiAOSDataArrayTemplate<ValueTypeT>::InsertNextTuple(const float* tuple)
+svtkIdType AOSDataArray<ValueTypeT>::InsertNextTuple(const float* tuple)
 {
   svtkIdType newMaxId = this->MaxId + this->NumberOfComponents;
   const svtkIdType tupleIdx = newMaxId / this->NumberOfComponents;
@@ -203,7 +209,7 @@ svtkIdType senseiAOSDataArrayTemplate<ValueTypeT>::InsertNextTuple(const float* 
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-svtkIdType senseiAOSDataArrayTemplate<ValueTypeT>::InsertNextTuple(const double* tuple)
+svtkIdType AOSDataArray<ValueTypeT>::InsertNextTuple(const double* tuple)
 {
   svtkIdType newMaxId = this->MaxId + this->NumberOfComponents;
   const svtkIdType tupleIdx = newMaxId / this->NumberOfComponents;
@@ -227,7 +233,7 @@ svtkIdType senseiAOSDataArrayTemplate<ValueTypeT>::InsertNextTuple(const double*
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::GetTuple(svtkIdType tupleIdx, double* tuple)
+void AOSDataArray<ValueTypeT>::GetTuple(svtkIdType tupleIdx, double* tuple)
 {
   ValueTypeT* data = this->Buffer->GetBuffer() + tupleIdx * this->NumberOfComponents;
   // See note in SetTuple about std::copy vs for loops on MSVC.
@@ -239,7 +245,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::GetTuple(svtkIdType tupleIdx, doubl
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-double* senseiAOSDataArrayTemplate<ValueTypeT>::GetTuple(svtkIdType tupleIdx)
+double* AOSDataArray<ValueTypeT>::GetTuple(svtkIdType tupleIdx)
 {
   ValueTypeT* data = this->Buffer->GetBuffer() + tupleIdx * this->NumberOfComponents;
   double* tuple = &this->LegacyTuple[0];
@@ -253,7 +259,7 @@ double* senseiAOSDataArrayTemplate<ValueTypeT>::GetTuple(svtkIdType tupleIdx)
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-svtkArrayIterator* senseiAOSDataArrayTemplate<ValueTypeT>::NewIterator()
+svtkArrayIterator* AOSDataArray<ValueTypeT>::NewIterator()
 {
   svtkArrayIterator* iter = svtkArrayIteratorTemplate<ValueType>::New();
   iter->Initialize(this);
@@ -262,7 +268,7 @@ svtkArrayIterator* senseiAOSDataArrayTemplate<ValueTypeT>::NewIterator()
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::ShallowCopy(svtkDataArray* other)
+void AOSDataArray<ValueTypeT>::ShallowCopy(svtkDataArray* other)
 {
   SelfType* o = SelfType::FastDownCast(other);
   if (o)
@@ -288,7 +294,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::ShallowCopy(svtkDataArray* other)
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::InsertTuples(
+void AOSDataArray<ValueTypeT>::InsertTuples(
   svtkIdType dstStart, svtkIdType n, svtkIdType srcStart, svtkAbstractArray* source)
 {
   // First, check for the common case of typeid(source) == typeid(this). This
@@ -347,7 +353,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::InsertTuples(
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::FillTypedComponent(int compIdx, ValueType value)
+void AOSDataArray<ValueTypeT>::FillTypedComponent(int compIdx, ValueType value)
 {
   if (this->NumberOfComponents <= 1)
   {
@@ -361,7 +367,7 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::FillTypedComponent(int compIdx, Val
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::FillValue(ValueType value)
+void AOSDataArray<ValueTypeT>::FillValue(ValueType value)
 {
   std::ptrdiff_t offset = this->MaxId + 1;
   std::fill(this->Buffer->GetBuffer(), this->Buffer->GetBuffer() + offset, value);
@@ -369,15 +375,15 @@ void senseiAOSDataArrayTemplate<ValueTypeT>::FillValue(ValueType value)
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void senseiAOSDataArrayTemplate<ValueTypeT>::Fill(double value)
+void AOSDataArray<ValueTypeT>::Fill(double value)
 {
   this->FillValue(static_cast<ValueType>(value));
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-typename senseiAOSDataArrayTemplate<ValueTypeT>::ValueType*
-senseiAOSDataArrayTemplate<ValueTypeT>::WritePointer(svtkIdType valueIdx, svtkIdType numValues)
+typename AOSDataArray<ValueTypeT>::ValueType*
+AOSDataArray<ValueTypeT>::WritePointer(svtkIdType valueIdx, svtkIdType numValues)
 {
   svtkIdType newSize = valueIdx + numValues;
   if (newSize > this->Size)
@@ -398,29 +404,29 @@ senseiAOSDataArrayTemplate<ValueTypeT>::WritePointer(svtkIdType valueIdx, svtkId
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void* senseiAOSDataArrayTemplate<ValueTypeT>::WriteVoidPointer(svtkIdType valueIdx, svtkIdType numValues)
+void* AOSDataArray<ValueTypeT>::WriteVoidPointer(svtkIdType valueIdx, svtkIdType numValues)
 {
   return this->WritePointer(valueIdx, numValues);
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-typename senseiAOSDataArrayTemplate<ValueTypeT>::ValueType*
-senseiAOSDataArrayTemplate<ValueTypeT>::GetPointer(svtkIdType valueIdx)
+typename AOSDataArray<ValueTypeT>::ValueType*
+AOSDataArray<ValueTypeT>::GetPointer(svtkIdType valueIdx)
 {
   return this->Buffer->GetBuffer() + valueIdx;
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-void* senseiAOSDataArrayTemplate<ValueTypeT>::GetVoidPointer(svtkIdType valueIdx)
+void* AOSDataArray<ValueTypeT>::GetVoidPointer(svtkIdType valueIdx)
 {
   return this->GetPointer(valueIdx);
 }
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-bool senseiAOSDataArrayTemplate<ValueTypeT>::AllocateTuples(svtkIdType numTuples)
+bool AOSDataArray<ValueTypeT>::AllocateTuples(svtkIdType numTuples)
 {
   svtkIdType numValues = numTuples * this->GetNumberOfComponents();
   if (this->Buffer->Allocate(numValues))
@@ -433,7 +439,7 @@ bool senseiAOSDataArrayTemplate<ValueTypeT>::AllocateTuples(svtkIdType numTuples
 
 //-----------------------------------------------------------------------------
 template <class ValueTypeT>
-bool senseiAOSDataArrayTemplate<ValueTypeT>::ReallocateTuples(svtkIdType numTuples)
+bool AOSDataArray<ValueTypeT>::ReallocateTuples(svtkIdType numTuples)
 {
   if (this->Buffer->Reallocate(numTuples * this->GetNumberOfComponents()))
   {
@@ -441,6 +447,9 @@ bool senseiAOSDataArrayTemplate<ValueTypeT>::ReallocateTuples(svtkIdType numTupl
     return true;
   }
   return false;
+}
+*/
+
 }
 
 #endif // header guard
