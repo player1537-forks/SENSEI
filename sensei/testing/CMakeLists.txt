@@ -229,4 +229,11 @@ if (BUILD_TESTING)
   #  PARALLEL ${TEST_NP}
   #  COMMAND $<TARGET_FILE:testAOSDataArray>)
 
+
+  ##############################################################################
+  senseiAddTest(testAOSDataArray
+    SOURCES testAOSDataArray.cpp LIBS sensei hamr EXEC_NAME testAOSDataArray
+    COMMAND $<TARGET_FILE:testAOSDataArray>)
+
+
 endif()

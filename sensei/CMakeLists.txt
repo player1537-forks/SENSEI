@@ -12,7 +12,7 @@ if (ENABLE_SENSEI)
     PlanarSlicePartitioner.cxx Profiler.cxx ProgrammableDataAdaptor.cxx
     SVTKDataAdaptor.cxx SVTKUtils.cxx XMLUtils.cxx)
 
-  set(senseiCore_libs pugixml thread sDIY sSVTK sMPI)
+  set(senseiCore_libs pugixml thread sDIY sSVTK sMPI hamr)
 
   set(senseiCore_cuda_sources)
   if (ENABLE_CUDA)

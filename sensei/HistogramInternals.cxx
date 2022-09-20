@@ -24,6 +24,7 @@
 #include <svtkUnsignedCharArray.h>
 #include <svtkAOSDataArrayTemplate.h>
 #include <svtkSOADataArrayTemplate.h>
+#include <svtkHAMRDataArray.h>
 #include <svtkCompositeDataIterator.h>
 #include <svtkCompositeDataSet.h>
 #include <svtkDataObject.h>
@@ -307,7 +308,17 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
       sensei::CUDAUtils::SetDevice(this->DeviceId);
 
       // get a pointer accessible on the GPU
-      pGhosts = sensei::MemoryUtils::MakeCudaAccessible(ghosts->GetPointer(0), nVals);
+      if (dynamic_cast<svtkHAMRDataArray<unsigned char>*>(((svtkDataArray*)ghosts))
+        {
+        svtkHAMRDataArray<unsigned char> *tGhosts =
+          static_cast<svtkHAMRDataArray<unsigned char>*>(((svtkDataArray*)ghosts);
+
+        pGhosts = tGhosts->GetCUDAAccessible();
+        }
+      else
+        {
+        pGhosts = sensei::MemoryUtils::MakeCudaAccessible(ghosts->GetPointer(0), nVals);
+        }
       }
     else
       {
@@ -316,7 +327,17 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
       std::cerr << "HistogramInternals::AddLocalData ghosts CPU" << std::endl;
 #endif
       // get a pointer accessible on the CPU
-      pGhosts = sensei::MemoryUtils::MakeCpuAccessible(ghosts->GetPointer(0), nVals);
+      if (dynamic_cast<svtkHAMRDataArray<unsigned char>*>((svtkDataArray*)ghosts))
+        {
+        svtkHAMRDataArray<unsigned char> *tGhosts =
+          static_cast<svtkHAMRDataArray<unsigned char>*>((svtkDataArray*)ghosts);
+
+        pGhosts = tGhosts->GetCPUAccessible();
+        }
+      else
+        {
+        pGhosts = sensei::MemoryUtils::MakeCpuAccessible(ghosts->GetPointer(0), nVals);
+        }
 #if defined(ENABLE_CUDA)
       }
 #endif
@@ -335,22 +356,12 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
       sensei::CUDAUtils::SetDevice(this->DeviceId);
 
       // generate ghosts on the GPU
-      unsigned char *devpGhosts = nullptr;
-      cudaError_t ierr = cudaSuccess;
-      if ((ierr = cudaMalloc(&devpGhosts, nVals)) != cudaSuccess)
-        {
-        SENSEI_ERROR("Failed to allocate ghost zones on the GPU. "
-          << cudaGetErrorString(ierr))
-        return -1;
-        }
-      if ((ierr = cudaMemset(devpGhosts, 0, nVals)) != cudaSuccess)
-        {
-        SENSEI_ERROR("Failed to zero ghost zones on the GPU. "
-          << cudaGetErrorString(ierr))
-        return -1;
-        }
-      pGhosts = std::shared_ptr<unsigned char>(devpGhosts,
-        sensei::MemoryUtils::FreeCudaPtr);
+      svtkHAMRDataAtray<unsigned char> *tGhosts =
+        svtkHAMRDataArray<unsigned char>::New(Allocator::cuda, nVals, 0);
+
+      pGhosts = tGhosts->GetCUDAAccessible();
+
+      tGhosts->Delete();
       }
     else
       {
@@ -360,10 +371,12 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
         " allocating on the CPU" << std::endl;
 #endif
       // generate ghosts on the CPU
-      pGhosts = std::shared_ptr<unsigned char>(
-        (unsigned char*)malloc(nVals), sensei::MemoryUtils::FreeCpuPtr);
+      svtkHAMRDataArray<unsigned char> *tGhosts =
+        svtkHAMRDataArray<unsigned char>::New(Allocator::malloc, nVals, 0);
 
-      memset(pGhosts.get(), 0, nVals);
+      pGhosts = tGhosts->GetCPUAccessible();
+
+      tGhosts->Delete();
 #if defined(ENABLE_CUDA)
       }
 #endif
@@ -386,8 +399,18 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
           << (da->GetName() ? da->GetName() : "\"\"") << " CUDA" << std::endl;
 #endif
         // get a pointer to the data that's usable on the GPU
-        pDa = sensei::MemoryUtils::MakeCudaAccessible(
-          sensei::SVTKUtils::GetPointer<SVTK_TT>(da), nVals);
+        if (dynamic_cast<svtkHAMRDataArray<SVTK_TT>*>(da))
+          {
+          svtkHAMRDataArray<SVTK_TT> *tDa =
+            static_cast<svtkHAMRDataArray<SVTK_TT>*>(da);
+
+          pDa = tDa->GetCUDAAccessible();
+          }
+        else
+          {
+          pDa = sensei::MemoryUtils::MakeCudaAccessible(
+            sensei::SVTKUtils::GetPointer<SVTK_TT>(da), nVals);
+          }
         }
       else
         {
@@ -396,8 +419,18 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
         std::cerr << "HistogramInternals::AddLocalData "
           << (da->GetName() ? da->GetName() : "\"\"") << " CPU" << std::endl;
 #endif
-        pDa = sensei::MemoryUtils::MakeCpuAccessible(
-         sensei::SVTKUtils::GetPointer<SVTK_TT>(da), nVals);
+        if (dynamic_cast<svtkHAMRDataArray<SVTK_TT>*>(da))
+          {
+          svtkHAMRDataArray<SVTK_TT> *tDa =
+            static_cast<svtkHAMRDataArray<SVTK_TT>*>(da);
+
+          pDa = tDa->GetCPUAccessible();
+          }
+        else
+          {
+          pDa = sensei::MemoryUtils::MakeCpuAccessible(
+           sensei::SVTKUtils::GetPointer<SVTK_TT>(da), nVals);
+          }
 #if defined(ENABLE_CUDA)
         }
 #endif
