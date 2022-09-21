@@ -308,10 +308,10 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
       sensei::CUDAUtils::SetDevice(this->DeviceId);
 
       // get a pointer accessible on the GPU
-      if (dynamic_cast<svtkHAMRDataArray<unsigned char>*>(((svtkDataArray*)ghosts))
+      if (dynamic_cast<svtkHAMRDataArray<unsigned char>*>(((svtkDataArray*)ghosts)))
         {
         svtkHAMRDataArray<unsigned char> *tGhosts =
-          static_cast<svtkHAMRDataArray<unsigned char>*>(((svtkDataArray*)ghosts);
+          static_cast<svtkHAMRDataArray<unsigned char>*>(((svtkDataArray*)ghosts));
 
         pGhosts = tGhosts->GetCUDAAccessible();
         }
@@ -356,8 +356,8 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
       sensei::CUDAUtils::SetDevice(this->DeviceId);
 
       // generate ghosts on the GPU
-      svtkHAMRDataAtray<unsigned char> *tGhosts =
-        svtkHAMRDataArray<unsigned char>::New(Allocator::cuda, nVals, 0);
+      svtkHAMRDataArray<unsigned char> *tGhosts =
+        svtkHAMRDataArray<unsigned char>::New("vtkGhostType", nVals, 1, Allocator::cuda, 0);
 
       pGhosts = tGhosts->GetCUDAAccessible();
 
@@ -372,7 +372,7 @@ int HistogramInternals::AddLocalData(svtkDataArray *da,
 #endif
       // generate ghosts on the CPU
       svtkHAMRDataArray<unsigned char> *tGhosts =
-        svtkHAMRDataArray<unsigned char>::New(Allocator::malloc, nVals, 0);
+        svtkHAMRDataArray<unsigned char>::New("vtkGhostType", nVals, 1, Allocator::malloc, 0);
 
       pGhosts = tGhosts->GetCPUAccessible();
 

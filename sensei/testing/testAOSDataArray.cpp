@@ -23,10 +23,8 @@ int main(int argc, char **argv)
         }
     }
 
-    svtkHAMRDataArray<double> *da = svtkHAMRDataArray<double>::New(ptr, nTups,
-                                                nComps, Allocator::malloc, -1);
-
-    da->SetName("foo");
+    svtkHAMRDataArray<double> *da = svtkHAMRDataArray<double>::New("foo", ptr,
+                                        nTups, nComps, Allocator::malloc, -1, 1);
 
     //da->Print(std::cerr);
 
