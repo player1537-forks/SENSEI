@@ -22,5 +22,5 @@ add_subdirectory(SVTK)
 add_subdirectory(pysvtk)
 
 set(HAMR_ENABLE_CUDA ${ENABLE_CUDA})
+set(HAMR_CUDA_ARCHITECTUTES "${SENSEI_CUDA_ARCHITECTURES}")
 add_subdirectory(HAMR)
-

@@ -4,6 +4,7 @@ if (BUILD_TESTING)
   senseiAddTest(testHistogramSerial
     SOURCES testHistogram.cpp LIBS sensei EXEC_NAME testHistogram
     COMMAND $<TARGET_FILE:testHistogram>
+    CUDA_TARGET
     LABELS HISTO)
 
   senseiAddTest(testHistogramParallel
@@ -233,7 +234,8 @@ if (BUILD_TESTING)
   ##############################################################################
   senseiAddTest(testAOSDataArray
     SOURCES testAOSDataArray.cpp LIBS sensei hamr EXEC_NAME testAOSDataArray
-    COMMAND $<TARGET_FILE:testAOSDataArray>)
+    COMMAND $<TARGET_FILE:testAOSDataArray>
+    CUDA_TARGET)
 
 
 endif()
