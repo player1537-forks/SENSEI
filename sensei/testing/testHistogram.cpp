@@ -116,7 +116,7 @@ int main(int argc, char **argv)
   std::shared_ptr<double> pVals(vals.data(), [](void*){});
 
   svtkHAMRDataArray<double> *da =
-    svtkHAMRDataArray<double>::New("normal", pVals, nVals, 1, Allocator::malloc, -1);
+    svtkHAMRDataArray<double>::New("normal", pVals, nVals, 1, svtkAllocator::malloc, -1);
 
 /*
   svtkDoubleArray *da = svtkDoubleArray::New();

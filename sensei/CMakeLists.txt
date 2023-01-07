@@ -14,11 +14,6 @@ if (ENABLE_SENSEI)
 
   set(senseiCore_libs pugixml thread sDIY sSVTK sMPI hamr)
 
-  set(senseiCore_cuda_sources)
-  if (ENABLE_CUDA)
-    list(APPEND senseiCore_cuda_sources CUDAUtils.cu MemoryUtils.cu HistogramInternals.cxx)
-  endif ()
-
   if (ENABLE_CONDUIT)
     list(APPEND senseiCore_sources ConduitDataAdaptor.cxx)
     list(APPEND senseiCore_libs sConduit)
@@ -86,11 +81,18 @@ if (ENABLE_ADIOS2)
     list(APPEND senseiCore_libs sVTK)
   endif()
 
-  add_library(senseiCore ${senseiCore_sources} ${senseiCore_cuda_sources})
-
+  set(senseiCore_cuda_sources)
   if (ENABLE_CUDA)
-    sensei_cuda_target(TARGET senseiCore SOURCES ${senseiCore_cuda_sources})
-  endif ()
+    list(APPEND senseiCore_cuda_sources CUDAUtils.cu MemoryUtils.cu HistogramInternals.cxx)
+  endif()
+
+  add_target(LIB
+    NAME senseiCore
+    CXX_SOURCES ${senseiCore_sources}
+    CU_SOURCES ${senseiCore_cuda_sources}
+    CU_ARCH "${SENSEI_CUDA_ARCHITECTURES}"
+    LINK_LIBS ${senseiCore_libs}
+    )
 
   target_include_directories(senseiCore PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

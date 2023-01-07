@@ -1,13 +1,18 @@
 #ifndef svtkHAMRDataArray_h
 #define svtkHAMRDataArray_h
 
+#if defined(ENABLE_CUDA)
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
 #include "hamr_buffer.h"
 
 #include "svtkDataArray.h"
 #include "svtkAOSDataArrayTemplate.h"
 #include "svtkCommonCoreModule.h"          // For export macro
 
-using Allocator = hamr::buffer_allocator;
+using svtkAllocator = hamr::buffer_allocator;
 
 template <typename T>
 class SVTKCOMMONCORE_EXPORT svtkHAMRDataArray : public svtkDataArray
@@ -24,14 +29,14 @@ public:
    * @param[in] data a pointer to the data
    * @param[in] numTuples the number of data tuples
    * @param[in] numComps the numper of components per tuple
-   * @param[in] alloc an ::Allocator instance declaring where the data resides
+   * @param[in] alloc an ::svtkAllocator instance declaring where the data resides
    * @param[in] owner the device id where the data resides, or -1 for the CPU
    * @param[in] take if true the ponited to data will be released using the
-   *                 deleter associated with the declared ::Allocator alloc
+   *                 deleter associated with the declared ::svtkAllocator alloc
    * @returns a new instance that must be deleted by the caller
    */
   static svtkHAMRDataArray *New(const char *name, T *data,
-    size_t numTuples, int numComps, Allocator alloc, int owner, int take);
+    size_t numTuples, int numComps, svtkAllocator alloc, int owner, int take);
 
   /** zero-copy the passed data. This override gives one direct control over the
    * management and reference counting of the pointed to data.
@@ -39,12 +44,12 @@ public:
    * @param[in] data a smart pointer that manages the pointed to data
    * @param[in] numTuples the number of data tuples
    * @param[in] numComps the numper of components per tuple
-   * @param[in] alloc an ::Allocator instance declaring where the data resides
+   * @param[in] alloc an ::svtkAllocator instance declaring where the data resides
    * @param[in] owner the device id where the data resides, or -1 for the CPU
    * @returns a new instance that must be deleted by the caller
    */
   static svtkHAMRDataArray *New(const char *name, const std::shared_ptr<T> &data,
-    size_t numTuples, int numComps, Allocator alloc, int owner);
+    size_t numTuples, int numComps, svtkAllocator alloc, int owner);
 
   /** zero-copy the passed data. This override gives one direct control over the
    * method that is used to release the ponited to array.
@@ -52,35 +57,35 @@ public:
    * @param[in] data a smart pointer that manages the pointed to data
    * @param[in] numTuples the number of data tuples
    * @param[in] numComps the numper of components per tuple
-   * @param[in] alloc an ::Allocator instance declaring where the data resides
+   * @param[in] alloc an ::svtkAllocator instance declaring where the data resides
    * @param[in] owner the device id where the data resides, or -1 for the CPU
    * @returns a new instance that must be deleted by the caller
    */
   template <typename deleter_t>
   static svtkHAMRDataArray *New(const char *name, T *data, size_t numTuples,
-    int numComps, Allocator alloc, int owner, deleter_t deleter);
+    int numComps, svtkAllocator alloc, int owner, deleter_t deleter);
 
   /** Allocate a new array of the specified size using the specified allocator
    * @param[in] name the name of the array
    * @param[in] numTuples the number of data tuples
    * @param[in] numComps the numper of components per tuple
-   * @param[in] alloc an ::Allocator instance declaring where the data resides
+   * @param[in] alloc an ::svtkAllocator instance declaring where the data resides
    * @returns a new instance that must be deleted by the caller
    */
   static svtkHAMRDataArray *New(const char *name,
-    size_t numTuples, int numComps, Allocator alloc);
+    size_t numTuples, int numComps, svtkAllocator alloc);
 
   /** Allocate a new array of the specified size using the specified allocator
    * initialized to the specified value
    * @param[in] name the name of the array
    * @param[in] numTuples the number of data tuples
    * @param[in] numComps the numper of components per tuple
-   * @param[in] alloc an ::Allocator instance declaring where the data resides
+   * @param[in] alloc an ::svtkAllocator instance declaring where the data resides
    * @param[in] initVal the value to initialize the contents to
    * @returns a new instance that must be deleted by the caller
    */
   static svtkHAMRDataArray *New(const char *name,
-    size_t numTuples, int numComps, Allocator alloc, const T &initVal);
+    size_t numTuples, int numComps, svtkAllocator alloc, const T &initVal);
 
   /** Convert via to an svtkAOSDataArrayTemplate instance. Because SVTK only
    * supports CPU based data, a deep-copy is made when this array is located on
@@ -95,7 +100,10 @@ public:
   /** Sets or changes the allocator used to manage the menory, this may move
    * the data from one device to another
    */
-  void SetAllocator(Allocator alloc);
+  void SetAllocator(svtkAllocator alloc)
+  {
+    this->Data->move(alloc);
+  }
 
   // resize the internal buffer
   //void Resize(size_t numTuples, int numComps);
@@ -104,24 +112,24 @@ public:
    * location of the passed data. Use ::Resize to allocate space.
    */
   //void CopyData(size_t destStart, T *srcData, size_t numTuples,
-  //  Allocator srcAlloc = Allocator::malloc, int owner = -1);
+  //  svtkAllocator srcAlloc = svtkAllocator::malloc, int owner = -1);
 
   /* append the contents of the passed in data. allocator and owner tells the current
    * location of the passed data.
    */
   //void AppendData(T *srcData, size_t numTuples,
-  //  Allocator srcAlloc = Allocator::malloc, int owner = -1);
+  //  svtkAllocator srcAlloc = svtkAllocator::malloc, int owner = -1);
 
   /** zero-copy the passed data. the allocator is used to tell where the data
    * resides. the callee (array instance) takes ownership of the pointer.
    */
-  void SetData(T *data, size_t numTuples, int numComps, Allocator alloc, int owner);
+  void SetData(T *data, size_t numTuples, int numComps, svtkAllocator alloc, int owner);
 
   /** zero-copy the passed data. the allocator is used to tell where the data
    * resides.
    */
   void SetData(const std::shared_ptr<T> &data, size_t numTuples, int numComps,
-    Allocator alloc, int owner);
+    svtkAllocator alloc, int owner);
 
   /** zero-copy the passed data. the allocator is used to tell where the data
    * resides the deleter will be called as void deleter(void *dataPtr) when the
@@ -129,19 +137,19 @@ public:
    */
   template <typename deleter_t>
   void SetData(T *dataPtr, size_t numTuples, int numComps,
-    Allocator alloc, int owner, deleter_t deleter);
+    svtkAllocator alloc, int owner, deleter_t deleter);
 
   /// returns a pointer to the data that is safe to use on the CPU
-  std::shared_ptr<T> GetCPUAccessible() { return this->Data->get_cpu_accessible(); }
+  std::shared_ptr<const T> GetCPUAccessible() const { return this->Data->get_cpu_accessible(); }
 
   /// returns a pointer to the data that is safe to use with CUDA
-  std::shared_ptr<T> GetCUDAAccessible() { return this->Data->get_cuda_accessible(); }
+  std::shared_ptr<const T> GetCUDAAccessible() const { return this->Data->get_cuda_accessible(); }
 
   /// returns a pointer to the data that is safe to use with HIP
-  std::shared_ptr<T> GetHIPAccessible() { return this->Data->get_hip_accessible(); }
+  std::shared_ptr<const T> GetHIPAccessible() const { return this->Data->get_hip_accessible(); }
 
   /// returns a pointer to the data that is safe to use with OpenMP device off load
-  std::shared_ptr<T> GetOpenMPAccessible() { return this->Data->get_openmp_accessible(); }
+  std::shared_ptr<const T> GetOpenMPAccessible() const { return this->Data->get_openmp_accessible(); }
 
   /// return true if a pooniter to the data is safe to use on the CPU
   bool CPUAccessible() { return this->Data->cpu_accessible(); }
@@ -343,7 +351,7 @@ svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New()
 // --------------------------------------------------------------------------
 template<typename T>
 svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name,
-  size_t numTuples, int numComps, Allocator alloc)
+  size_t numTuples, int numComps, svtkAllocator alloc)
 {
   assert(numComps > 0);
 
@@ -359,7 +367,7 @@ svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name,
 // --------------------------------------------------------------------------
 template<typename T>
 svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name,
-  size_t numTuples, int numComps, Allocator alloc, const T &initVal)
+  size_t numTuples, int numComps, svtkAllocator alloc, const T &initVal)
 {
   assert(numComps > 0);
 
@@ -375,7 +383,7 @@ svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name,
 // --------------------------------------------------------------------------
 template<typename T>
 svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name, T *data,
-  size_t numTuples, int numComps, Allocator alloc, int owner, int take)
+  size_t numTuples, int numComps, svtkAllocator alloc, int owner, int take)
 {
   assert(numComps > 0);
 
@@ -402,7 +410,7 @@ svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name, T *data,
 template<typename T>
 svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name,
   const std::shared_ptr<T> &data, size_t numTuples, int numComps,
-  Allocator alloc, int owner)
+  svtkAllocator alloc, int owner)
 {
   assert(numComps > 0);
 
@@ -419,7 +427,7 @@ svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name,
 template<typename T>
 template <typename deleter_t>
 svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name, T *data,
-  size_t numTuples, int numComps, Allocator alloc, int owner,
+  size_t numTuples, int numComps, svtkAllocator alloc, int owner,
   deleter_t deleter)
 {
   assert(numComps > 0);
@@ -436,7 +444,7 @@ svtkHAMRDataArray<T> *svtkHAMRDataArray<T>::New(const char *name, T *data,
 // --------------------------------------------------------------------------
 template<typename T>
 void svtkHAMRDataArray<T>::SetData(T *data, size_t numTuples,
-  int numComps, Allocator alloc, int owner)
+  int numComps, svtkAllocator alloc, int owner)
 {
   assert(numComps > 0);
 
@@ -450,7 +458,7 @@ void svtkHAMRDataArray<T>::SetData(T *data, size_t numTuples,
 // --------------------------------------------------------------------------
 template<typename T>
 void svtkHAMRDataArray<T>::SetData(const std::shared_ptr<T> &data,
-    size_t numTuples, int numComps, Allocator alloc, int owner)
+    size_t numTuples, int numComps, svtkAllocator alloc, int owner)
 {
   assert(numComps > 0);
 
@@ -465,7 +473,7 @@ void svtkHAMRDataArray<T>::SetData(const std::shared_ptr<T> &data,
 template<typename T>
 template <typename deleter_t>
 void svtkHAMRDataArray<T>::SetData(T *data,
-  size_t numTuples, int numComps, Allocator alloc, int owner,
+  size_t numTuples, int numComps, svtkAllocator alloc, int owner,
   deleter_t deleter)
 {
   assert(numComps > 0);
@@ -674,6 +682,8 @@ void svtkHAMRDataArray<T>::SetNumberOfTuples(svtkIdType numTuples)
 template <typename T>
 svtkTypeBool svtkHAMRDataArray<T>::Allocate(svtkIdType numValues, svtkIdType ext)
 {
+  (void)numValues;
+  (void)ext;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return false;
@@ -721,6 +731,7 @@ int svtkHAMRDataArray<T>::GetElementComponentSize() const
 template <typename T>
 void svtkHAMRDataArray<T>::SetNumberOfTuples(svtkIdType numTuples)
 {
+  (void)numTuples;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -729,6 +740,7 @@ void svtkHAMRDataArray<T>::SetNumberOfTuples(svtkIdType numTuples)
 template <typename T>
 bool svtkHAMRDataArray<T>::SetNumberOfValues(svtkIdType numValues)
 {
+  (void)numValues;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -737,6 +749,9 @@ bool svtkHAMRDataArray<T>::SetNumberOfValues(svtkIdType numValues)
 template <typename T>
 void svtkHAMRDataArray<T>::SetTuple(svtkIdType dstTupleIdx, svtkIdType srcTupleIdx, svtkAbstractArray* source)
 {
+  (void)dstTupleIdx;
+  (void)srcTupleIdx;
+  (void)source;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -745,6 +760,9 @@ void svtkHAMRDataArray<T>::SetTuple(svtkIdType dstTupleIdx, svtkIdType srcTupleI
 template <typename T>
 void svtkHAMRDataArray<T>::InsertTuple(svtkIdType dstTupleIdx, svtkIdType srcTupleIdx, svtkAbstractArray* source)
 {
+  (void)dstTupleIdx;
+  (void)srcTupleIdx;
+  (void)source;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -753,6 +771,9 @@ void svtkHAMRDataArray<T>::InsertTuple(svtkIdType dstTupleIdx, svtkIdType srcTup
 template <typename T>
 void svtkHAMRDataArray<T>::InsertTuples(svtkIdList* dstIds, svtkIdList* srcIds, svtkAbstractArray* source)
 {
+  (void)dstIds;
+  (void)srcIds;
+  (void)source;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -761,6 +782,10 @@ void svtkHAMRDataArray<T>::InsertTuples(svtkIdList* dstIds, svtkIdList* srcIds, 
 template <typename T>
 void svtkHAMRDataArray<T>::InsertTuples(svtkIdType dstStart, svtkIdType n, svtkIdType srcStart, svtkAbstractArray* source)
 {
+  (void)dstStart;
+  (void)n;
+  (void)srcStart;
+  (void)source;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -769,6 +794,8 @@ void svtkHAMRDataArray<T>::InsertTuples(svtkIdType dstStart, svtkIdType n, svtkI
 template <typename T>
 svtkIdType svtkHAMRDataArray<T>::InsertNextTuple(svtkIdType srcTupleIdx, svtkAbstractArray* source)
 {
+  (void)srcTupleIdx;
+  (void)source;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -777,6 +804,8 @@ svtkIdType svtkHAMRDataArray<T>::InsertNextTuple(svtkIdType srcTupleIdx, svtkAbs
 template <typename T>
 void svtkHAMRDataArray<T>::GetTuples(svtkIdList* tupleIds, svtkAbstractArray* output)
 {
+  (void)tupleIds;
+  (void)output;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -785,6 +814,9 @@ void svtkHAMRDataArray<T>::GetTuples(svtkIdList* tupleIds, svtkAbstractArray* ou
 template <typename T>
 void svtkHAMRDataArray<T>::GetTuples(svtkIdType p1, svtkIdType p2, svtkAbstractArray* output)
 {
+  (void)p1;
+  (void)p2;
+  (void)output;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -802,6 +834,7 @@ bool svtkHAMRDataArray<T>::HasStandardMemoryLayout() const
 template <typename T>
 void* svtkHAMRDataArray<T>::GetVoidPointer(svtkIdType valueIdx)
 {
+  (void)valueIdx;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return nullptr;
@@ -811,6 +844,7 @@ void* svtkHAMRDataArray<T>::GetVoidPointer(svtkIdType valueIdx)
 template <typename T>
 void svtkHAMRDataArray<T>::DeepCopy(svtkAbstractArray* da)
 {
+  (void)da;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -819,6 +853,10 @@ void svtkHAMRDataArray<T>::DeepCopy(svtkAbstractArray* da)
 template <typename T>
 void svtkHAMRDataArray<T>::InterpolateTuple(svtkIdType dstTupleIdx, svtkIdList* ptIndices, svtkAbstractArray* source, double* weights)
 {
+  (void)dstTupleIdx;
+  (void)ptIndices;
+  (void)source;
+  (void)weights;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -827,6 +865,12 @@ void svtkHAMRDataArray<T>::InterpolateTuple(svtkIdType dstTupleIdx, svtkIdList* 
 template <typename T>
 void svtkHAMRDataArray<T>::InterpolateTuple(svtkIdType dstTupleIdx, svtkIdType srcTupleIdx1, svtkAbstractArray* source1, svtkIdType srcTupleIdx2, svtkAbstractArray* source2, double t)
 {
+  (void)dstTupleIdx;
+  (void)srcTupleIdx1;
+  (void)source1;
+  (void)srcTupleIdx2;
+  (void)source2;
+  (void)t;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -843,6 +887,7 @@ void svtkHAMRDataArray<T>::Squeeze()
 template <typename T>
 svtkTypeBool svtkHAMRDataArray<T>::Resize(svtkIdType numTuples)
 {
+  (void)numTuples;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return true;
@@ -852,6 +897,9 @@ svtkTypeBool svtkHAMRDataArray<T>::Resize(svtkIdType numTuples)
 template <typename T>
 void svtkHAMRDataArray<T>::SetVoidArray(void* array, svtkIdType size, int save)
 {
+  (void)array;
+  (void)size;
+  (void)save;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -860,6 +908,10 @@ void svtkHAMRDataArray<T>::SetVoidArray(void* array, svtkIdType size, int save)
 template <typename T>
 void svtkHAMRDataArray<T>::SetVoidArray(void* array, svtkIdType size, int save, int deleteMethod)
 {
+  (void)array;
+  (void)size;
+  (void)save;
+  (void)deleteMethod;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -868,6 +920,7 @@ void svtkHAMRDataArray<T>::SetVoidArray(void* array, svtkIdType size, int save, 
 template <typename T>
 void svtkHAMRDataArray<T>::SetArrayFreeFunction(void (*callback)(void*))
 {
+  (void)callback;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -876,6 +929,7 @@ void svtkHAMRDataArray<T>::SetArrayFreeFunction(void (*callback)(void*))
 template <typename T>
 void svtkHAMRDataArray<T>::ExportToVoidPointer(void* out_ptr)
 {
+  (void)out_ptr;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -902,6 +956,7 @@ int svtkHAMRDataArray<T>::IsNumeric() const
 template <typename T>
 svtkIdType svtkHAMRDataArray<T>::LookupValue(svtkVariant value)
 {
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -910,6 +965,8 @@ svtkIdType svtkHAMRDataArray<T>::LookupValue(svtkVariant value)
 template <typename T>
 void svtkHAMRDataArray<T>::LookupValue(svtkVariant value, svtkIdList* valueIds)
 {
+  (void)value;
+  (void)valueIds;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -918,6 +975,7 @@ void svtkHAMRDataArray<T>::LookupValue(svtkVariant value, svtkIdList* valueIds)
 template <typename T>
 svtkVariant svtkHAMRDataArray<T>::GetVariantValue(svtkIdType valueIdx)
 {
+  (void)valueIdx;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -926,6 +984,8 @@ svtkVariant svtkHAMRDataArray<T>::GetVariantValue(svtkIdType valueIdx)
 template <typename T>
 void svtkHAMRDataArray<T>::InsertVariantValue(svtkIdType valueIdx, svtkVariant value)
 {
+  (void)valueIdx;
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -934,6 +994,8 @@ void svtkHAMRDataArray<T>::InsertVariantValue(svtkIdType valueIdx, svtkVariant v
 template <typename T>
 void svtkHAMRDataArray<T>::SetVariantValue(svtkIdType valueIdx, svtkVariant value)
 {
+  (void)valueIdx;
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -958,6 +1020,10 @@ void svtkHAMRDataArray<T>::ClearLookup()
 template <typename T>
 void svtkHAMRDataArray<T>::GetProminentComponentValues(int comp, svtkVariantArray* values, double uncertainty, double minimumProminence)
 {
+  (void)comp;
+  (void)values;
+  (void)uncertainty;
+  (void)minimumProminence;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -966,6 +1032,8 @@ void svtkHAMRDataArray<T>::GetProminentComponentValues(int comp, svtkVariantArra
 template <typename T>
 int svtkHAMRDataArray<T>::CopyInformation(svtkInformation* infoFrom, int deep)
 {
+  (void)infoFrom;
+  (void)deep;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return 0;
@@ -975,6 +1043,7 @@ int svtkHAMRDataArray<T>::CopyInformation(svtkInformation* infoFrom, int deep)
 template <typename T>
 double* svtkHAMRDataArray<T>::GetTuple(svtkIdType tupleIdx)
 {
+  (void)tupleIdx;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return nullptr;
@@ -984,6 +1053,8 @@ double* svtkHAMRDataArray<T>::GetTuple(svtkIdType tupleIdx)
 template <typename T>
 void svtkHAMRDataArray<T>::GetTuple(svtkIdType tupleIdx, double* tuple)
 {
+  (void)tupleIdx;
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -992,6 +1063,8 @@ void svtkHAMRDataArray<T>::GetTuple(svtkIdType tupleIdx, double* tuple)
 template <typename T>
 void svtkHAMRDataArray<T>::SetTuple(svtkIdType tupleIdx, const float* tuple)
 {
+  (void)tupleIdx;
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1000,6 +1073,8 @@ void svtkHAMRDataArray<T>::SetTuple(svtkIdType tupleIdx, const float* tuple)
 template <typename T>
 void svtkHAMRDataArray<T>::SetTuple(svtkIdType tupleIdx, const double* tuple)
 {
+  (void)tupleIdx;
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1008,6 +1083,8 @@ void svtkHAMRDataArray<T>::SetTuple(svtkIdType tupleIdx, const double* tuple)
 template <typename T>
 void svtkHAMRDataArray<T>::InsertTuple(svtkIdType tupleIdx, const float* tuple)
 {
+  (void)tupleIdx;
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1016,6 +1093,8 @@ void svtkHAMRDataArray<T>::InsertTuple(svtkIdType tupleIdx, const float* tuple)
 template <typename T>
 void svtkHAMRDataArray<T>::InsertTuple(svtkIdType tupleIdx, const double* tuple)
 {
+  (void)tupleIdx;
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1024,6 +1103,7 @@ void svtkHAMRDataArray<T>::InsertTuple(svtkIdType tupleIdx, const double* tuple)
 template <typename T>
 svtkIdType svtkHAMRDataArray<T>::InsertNextTuple(const float* tuple)
 {
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return 0;
@@ -1033,6 +1113,7 @@ svtkIdType svtkHAMRDataArray<T>::InsertNextTuple(const float* tuple)
 template <typename T>
 svtkIdType svtkHAMRDataArray<T>::InsertNextTuple(const double* tuple)
 {
+  (void)tuple;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1041,6 +1122,7 @@ svtkIdType svtkHAMRDataArray<T>::InsertNextTuple(const double* tuple)
 template <typename T>
 void svtkHAMRDataArray<T>::RemoveTuple(svtkIdType tupleIdx)
 {
+  (void)tupleIdx;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1057,6 +1139,8 @@ void svtkHAMRDataArray<T>::RemoveLastTuple()
 template <typename T>
 double svtkHAMRDataArray<T>::GetComponent(svtkIdType tupleIdx, int compIdx)
 {
+  (void)tupleIdx;
+  (void)compIdx;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
   return 0.;
@@ -1066,6 +1150,9 @@ double svtkHAMRDataArray<T>::GetComponent(svtkIdType tupleIdx, int compIdx)
 template <typename T>
 void svtkHAMRDataArray<T>::SetComponent(svtkIdType tupleIdx, int compIdx, double value)
 {
+  (void)tupleIdx;
+  (void)compIdx;
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1074,6 +1161,9 @@ void svtkHAMRDataArray<T>::SetComponent(svtkIdType tupleIdx, int compIdx, double
 template <typename T>
 void svtkHAMRDataArray<T>::InsertComponent(svtkIdType tupleIdx, int compIdx, double value)
 {
+  (void)tupleIdx;
+  (void)compIdx;
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1082,6 +1172,11 @@ void svtkHAMRDataArray<T>::InsertComponent(svtkIdType tupleIdx, int compIdx, dou
 template <typename T>
 void svtkHAMRDataArray<T>::GetData( svtkIdType tupleMin, svtkIdType tupleMax, int compMin, int compMax, svtkDoubleArray* data)
 {
+  (void)tupleMin;
+  (void)tupleMax;
+  (void)compMin;
+  (void)compMax;
+  (void)data;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1090,6 +1185,7 @@ void svtkHAMRDataArray<T>::GetData( svtkIdType tupleMin, svtkIdType tupleMax, in
 template <typename T>
 void svtkHAMRDataArray<T>::DeepCopy(svtkDataArray* da)
 {
+  (void)da;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1098,6 +1194,7 @@ void svtkHAMRDataArray<T>::DeepCopy(svtkDataArray* da)
 template <typename T>
 void svtkHAMRDataArray<T>::ShallowCopy(svtkDataArray* other)
 {
+  (void)other;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1106,6 +1203,8 @@ void svtkHAMRDataArray<T>::ShallowCopy(svtkDataArray* other)
 template <typename T>
 void svtkHAMRDataArray<T>::FillComponent(int compIdx, double value)
 {
+  (void)compIdx;
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1114,6 +1213,7 @@ void svtkHAMRDataArray<T>::FillComponent(int compIdx, double value)
 template <typename T>
 void svtkHAMRDataArray<T>::Fill(double value)
 {
+  (void)value;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1122,6 +1222,9 @@ void svtkHAMRDataArray<T>::Fill(double value)
 template <typename T>
 void svtkHAMRDataArray<T>::CopyComponent(int dstComponent, svtkDataArray* src, int srcComponent)
 {
+  (void)dstComponent;
+  (void)src;
+  (void)srcComponent;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
@@ -1130,6 +1233,8 @@ void svtkHAMRDataArray<T>::CopyComponent(int dstComponent, svtkDataArray* src, i
 template <typename T>
 void* svtkHAMRDataArray<T>::WriteVoidPointer(svtkIdType valueIdx, svtkIdType numValues)
 {
+  (void)valueIdx;
+  (void)numValues;
   svtkErrorMacro(<< "Method \"" <<  __FUNCTION__ << "\" not implemented.");
   abort();
 }
